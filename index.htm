@@ -8,75 +8,134 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
         }
+        /* Custom scrollbar for history */
+        .history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* slate-400 */
+            border-radius: 10px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* slate-500 */
+        }
+        
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-    <main class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-2xl text-center">
+    <main class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-6xl flex flex-col lg:flex-row gap-8">
 
-        <header class="mb-6">
-            <h1 class="text-4xl font-bold text-indigo-600">Bingo da Tabuada</h1>
-            <p class="text-slate-500 mt-2">Sorteie uma multiplicação e veja o resultado!</p>
-        </header>
+        <!-- Coluna Esquerda: Sorteador -->
+        <div class="flex-1">
+            <header class="mb-6 text-center">
+                <h1 class="text-4xl font-bold text-indigo-600">Bingo da Tabuada</h1>
+                <p class="text-slate-500 mt-2">Sorteie uma multiplicação e veja o resultado!</p>
+            </header>
 
-        <!-- Card de Sorteio -->
-        <div id="draw-container" class="h-64 w-full">
-            <div id="card" class="relative w-full h-full">
-                <!-- Card de Multiplicação -->
-                <div id="problem-display" class="absolute w-full h-full flex flex-col items-center justify-center bg-indigo-500 rounded-xl text-white p-4 shadow-lg">
-                    <span id="problem-text" class="text-7xl md:text-8xl font-bold tracking-tight">? X ?</span>
+            <!-- Card de Sorteio -->
+            <div id="draw-container" class="h-80 w-full">
+                <div id="card" class="relative w-full h-full">
+                    <!-- Card de Multiplicação -->
+                    <div id="problem-display" class="absolute w-full h-full flex flex-col items-center justify-center bg-indigo-500 rounded-xl text-white p-4 shadow-lg">
+                        <span id="problem-text" class="text-7xl md:text-8xl font-bold tracking-tight">? X ?</span>
+                    </div>
                 </div>
             </div>
+
+            <!-- Botões -->
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <button id="draw-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                    Sortear
+                </button>
+                <button id="open-generator-button" class="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                    Gerar Cartelas
+                </button>
+                 <button id="reset-button" class="w-full sm:w-auto bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-slate-300 hidden">
+                    Reiniciar
+                </button>
+            </div>
+            
+            <div id="counter" class="mt-4 text-slate-600 font-semibold text-center">0 / 81 sorteados</div>
         </div>
 
-        <!-- Botões -->
-        <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <button id="draw-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                Sortear
-            </button>
-             <button id="reset-button" class="w-full sm:w-auto bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-slate-300 hidden">
-                Reiniciar
-            </button>
-        </div>
-        
-        <div id="counter" class="mt-4 text-slate-600 font-semibold">0 / 90 sorteados</div>
-
-        <!-- Histórico -->
-        <div class="mt-8 border-t pt-6">
-            <h2 class="text-2xl font-semibold text-slate-700 mb-4">Números Sorteados</h2>
-            <div id="history-grid" class="flex flex-wrap justify-center gap-2">
+        <!-- Coluna Direita: Histórico -->
+        <div class="w-full lg:w-72 lg:max-h-[550px] overflow-y-auto border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-6 history-scroll">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-4 text-center sticky top-0 bg-white pb-2">Números Sorteados</h2>
+            <div id="history-grid" class="grid grid-cols-3 gap-2">
                 <!-- O histórico será inserido aqui via JS -->
             </div>
         </div>
-
     </main>
 
+    <!-- Modal Gerador de Cartelas -->
+    <div id="generator-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <header class="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-indigo-600">Gerador de Cartelas</h1>
+                <button id="close-modal-button" class="text-slate-500 hover:text-slate-800 text-3xl">&times;</button>
+            </header>
+
+            <div class="p-6 md:p-8 overflow-y-auto">
+                <!-- Configurações -->
+                <section id="config-section">
+                    <p class="text-slate-600 mb-6">Configure as opções abaixo para criar suas cartelas de bingo. Depois de gerar, você poderá imprimir.</p>
+                    <div class="grid md:grid-cols-3 gap-6 items-end">
+                        <div>
+                            <label for="card-title" class="block text-sm font-medium text-slate-700">Título da Folha</label>
+                            <input type="text" id="card-title" value="Bingo da Tabuada" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="card-quantity" class="block text-sm font-medium text-slate-700">Quantidade de Cartelas</label>
+                            <input type="number" id="card-quantity" value="4" min="1" max="100" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button id="generate-preview-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Gerar</button>
+                            <button id="print-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hidden">Imprimir</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Área de Preview -->
+                <section id="preview-area" class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Cartelas geradas aparecerão aqui -->
+                </section>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        // Elementos da UI
+        // --- LÓGICA DO SORTEADOR ---
         const drawButton = document.getElementById('draw-button');
         const resetButton = document.getElementById('reset-button');
         const problemText = document.getElementById('problem-text');
         const historyGrid = document.getElementById('history-grid');
         const counter = document.getElementById('counter');
 
-        // Estado do jogo
         let drawnProblems = new Set();
-        const TOTAL_PROBLEMS = 9 * 10; // Tabuadas do 2 ao 10 (9 tabelas), vezes 1 a 10.
-
-        // Event Listeners
+        const allProblems = [];
+        for (let i = 2; i <= 10; i++) {
+            for (let j = 1; j <= 10; j++) {
+                allProblems.push(`${i} X ${j}`);
+            }
+        }
+        const TOTAL_PROBLEMS = new Set(allProblems).size;
+        
         drawButton.addEventListener('click', drawNewProblem);
         resetButton.addEventListener('click', resetGame);
 
         function drawNewProblem() {
-            // Apenas realiza o sorteio, sem verificar o estado do card
-            performDraw();
-        }
-        
-        function performDraw() {
             if (drawnProblems.size >= TOTAL_PROBLEMS) {
                 problemText.textContent = 'FIM!';
                 drawButton.disabled = true;
@@ -85,37 +144,27 @@
                 return;
             }
 
-            let num1, num2, problem;
-            
-            // Garante que o problema sorteado é único
+            let problem;
             do {
-                num1 = Math.floor(Math.random() * 9) + 2; // Número de 2 a 10
-                num2 = Math.floor(Math.random() * 10) + 1; // Número de 1 a 10
+                const num1 = Math.floor(Math.random() * 9) + 2; // 2 a 10
+                const num2 = Math.floor(Math.random() * 10) + 1; // 1 a 10
                 problem = `${num1} X ${num2}`;
             } while (drawnProblems.has(problem));
 
-            // Adiciona ao set de sorteados
             drawnProblems.add(problem);
-
-            // Atualiza a UI
             problemText.textContent = problem;
             updateCounter();
-            
-            // Adiciona ao histórico imediatamente
             addToHistory(problem);
         }
 
         function addToHistory(problem) {
             const historyItem = document.createElement('div');
-            historyItem.className = 'bg-slate-200 p-2 rounded-md flex items-center justify-center shadow-sm w-24 text-center';
-            
+            historyItem.className = 'bg-slate-200 p-2 rounded-md flex items-center justify-center shadow-sm text-center';
             const problemEl = document.createElement('span');
             problemEl.className = 'font-semibold text-slate-800 text-base';
             problemEl.textContent = problem;
-            
             historyItem.appendChild(problemEl);
-            
-            historyGrid.appendChild(historyItem);
+            historyGrid.prepend(historyItem);
         }
 
         function updateCounter() {
@@ -127,16 +176,180 @@
             historyGrid.innerHTML = '';
             problemText.textContent = '? X ?';
             updateCounter();
-            
             drawButton.disabled = false;
             drawButton.classList.remove('opacity-50', 'cursor-not-allowed');
             resetButton.classList.add('hidden');
         }
+        updateCounter();
 
+        // --- LÓGICA DO GERADOR DE CARTELAS (MODAL) ---
+        const openGeneratorButton = document.getElementById('open-generator-button');
+        const generatorModal = document.getElementById('generator-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+        
+        const cardTitleInput = document.getElementById('card-title');
+        const cardQuantityInput = document.getElementById('card-quantity');
+        const generatePreviewButton = document.getElementById('generate-preview-button');
+        const printButton = document.getElementById('print-button');
+        const previewArea = document.getElementById('preview-area');
+        
+        openGeneratorButton.addEventListener('click', () => generatorModal.classList.remove('hidden'));
+        closeModalButton.addEventListener('click', () => generatorModal.classList.add('hidden'));
+        generatorModal.addEventListener('click', (e) => {
+            if (e.target === generatorModal) {
+                 generatorModal.classList.add('hidden');
+            }
+        });
+
+        const allResults = [];
+        for (let i = 2; i <= 10; i++) {
+            for (let j = 1; j <= 10; j++) {
+                allResults.push(i * j);
+            }
+        }
+        const uniqueResults = [...new Set(allResults)];
+
+        generatePreviewButton.addEventListener('click', generateCardsPreview);
+        
+        // --- LÓGICA DE IMPRESSÃO CORRIGIDA ---
+        printButton.addEventListener('click', generateAndOpenPdf);
+
+        async function generateAndOpenPdf() {
+            const originalButtonText = printButton.innerHTML;
+            printButton.disabled = true;
+            printButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Gerando PDF...`;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const cardElements = previewArea.querySelectorAll('.bingo-card-container');
+                const cardsPerPage = 4; // AJUSTADO PARA 4 CARTELAS
+                const totalPages = Math.ceil(cardElements.length / cardsPerPage);
+
+                for (let page = 0; page < totalPages; page++) {
+                    if (page > 0) {
+                        pdf.addPage();
+                    }
+
+                    const startIndex = page * cardsPerPage;
+                    const endIndex = startIndex + cardsPerPage;
+                    const pageCards = Array.from(cardElements).slice(startIndex, endIndex);
+
+                    // Cria um container temporário para a página atual, estilizado para impressão
+                    const pageContainer = document.createElement('div');
+                    pageContainer.style.position = 'absolute';
+                    pageContainer.style.left = '-9999px'; // Posiciona fora da tela para não ser visível
+                    pageContainer.style.display = 'grid';
+                    pageContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                    pageContainer.style.gap = '10mm';
+                    pageContainer.style.padding = '10mm';
+                    pageContainer.style.width = '210mm'; // Largura A4
+                    pageContainer.style.height = '297mm'; // Altura A4
+                    pageContainer.style.boxSizing = 'border-box';
+                    pageContainer.style.backgroundColor = 'white';
+
+
+                    pageCards.forEach(card => {
+                        pageContainer.appendChild(card.cloneNode(true));
+                    });
+
+                    document.body.appendChild(pageContainer);
+
+                    const canvas = await html2canvas(pageContainer, { scale: 2, useCORS: true });
+                    
+                    document.body.removeChild(pageContainer); // Limpa o container temporário do DOM
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                }
+
+                const pdfUrl = pdf.output('bloburl');
+                window.open(pdfUrl, '_blank');
+
+            } catch (error) {
+                console.error("Erro ao gerar o PDF:", error);
+                alert("Ocorreu um erro ao gerar o PDF. Tente novamente.");
+            } finally {
+                printButton.disabled = false;
+                printButton.innerHTML = originalButtonText;
+            }
+        }
+
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function generateCardsPreview() {
+            previewArea.innerHTML = '';
+            const quantity = parseInt(cardQuantityInput.value, 10);
+            const title = cardTitleInput.value;
+
+            if (quantity > 0) {
+                for (let i = 0; i < quantity; i++) {
+                    const cardElement = createCardElement(title, i + 1);
+                    previewArea.appendChild(cardElement);
+                }
+                printButton.classList.remove('hidden');
+            }
+        }
+
+        function createCardElement(title, id) {
+            const shuffledResults = shuffleArray([...uniqueResults]);
+            const cardNumbers = shuffledResults.slice(0, 24);
+
+            const cardContainer = document.createElement('div');
+            cardContainer.className = 'bingo-card-container p-4 border-2 border-slate-300 rounded-lg shadow-md bg-white w-full mx-auto flex flex-col';
+            
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'flex justify-between items-center mb-4';
+            
+            const cardTitle = document.createElement('h3');
+            cardTitle.className = 'text-center text-lg font-bold text-indigo-600';
+            cardTitle.textContent = title;
+
+            const cardId = document.createElement('span');
+            cardId.className = 'text-xs font-semibold text-slate-500';
+            cardId.textContent = `Nº ${String(id).padStart(3, '0')}`;
+            
+            cardHeader.appendChild(cardTitle);
+            cardHeader.appendChild(cardId);
+
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-5 gap-1 text-center';
+
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-full aspect-square flex items-center justify-center rounded-md text-slate-800 font-bold text-base md:text-lg';
+
+                if (i === 12) { // Célula central
+                    cell.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 text-yellow-400"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" /></svg>';
+                    cell.classList.add('bg-indigo-100');
+                } else {
+                    const numberIndex = i < 12 ? i : i - 1;
+                    cell.textContent = cardNumbers[numberIndex];
+                    cell.classList.add('bg-slate-100');
+                }
+                grid.appendChild(cell);
+            }
+            
+            cardContainer.appendChild(cardHeader);
+            cardContainer.appendChild(grid);
+            return cardContainer;
+        }
     </script>
 </body>
 </html>
-
-
-
 
